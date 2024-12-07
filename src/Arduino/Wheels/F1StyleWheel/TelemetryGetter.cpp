@@ -1,6 +1,6 @@
 #include "TelemetryGetter.h"
 
-#define ASKWIFI 0
+#define ASKWIFI 1
 
 #include <WiFi.h>
 
@@ -14,12 +14,244 @@ AsyncUDP udp;
 
 TelemetryPackets latestTelemetryPackets = TelemetryPackets();
 
-void setupTelemetry() {
-  bool success = setupNVS();
-  while (!success) delay(10);
+void addSessionStartedCallback(TelemetryEventCallback callback) {
+  sessionStartedCallbacks.addCallback(callback);
+}
+void addSessionEndedCallback(TelemetryEventCallback callback) {
+  sessionEndedCallbacks.addCallback(callback);
+}
+void addFastestLapCallback(TelemetryEventCallback callback) {
+  fastestLapCallbacks.addCallback(callback);
+}
+void addRetirementCallback(TelemetryEventCallback callback) {
+  retirementCallbacks.addCallback(callback);
+}
+void addDRSEnabledCallback(TelemetryEventCallback callback) {
+  drsEnabledCallbacks.addCallback(callback);
+}
+void addDRSDisabledCallback(TelemetryEventCallback callback) {
+  drsDisabledCallbacks.addCallback(callback);
+}
+void addTeamMateInPitsCallback(TelemetryEventCallback callback) {
+  teamMateInPitsCallbacks.addCallback(callback);
+}
+void addChequeredFlagCallback(TelemetryEventCallback callback) {
+  chequeredFlagCallbacks.addCallback(callback);
+}
+void addRaceWinnerCallback(TelemetryEventCallback callback) {
+  raceWinnerCallbacks.addCallback(callback);
+}
+void addPenaltyIssuedCallback(TelemetryEventCallback callback) {
+  penaltyIssuedCallbacks.addCallback(callback);
+}
+void addSpeedTrapTriggeredCallback(TelemetryEventCallback callback) {
+  speedTrapTriggeredCallbacks.addCallback(callback);
+}
+void addStartLightsCallback(TelemetryEventCallback callback) {
+  startLightsCallbacks.addCallback(callback);
+}
+void addLightsOutCallback(TelemetryEventCallback callback) {
+  lightsOutCallbacks.addCallback(callback);
+}
+void addDriveThroughServedCallback(TelemetryEventCallback callback) {
+  driveThroughServedCallbacks.addCallback(callback);
+}
+void addStopGoServedCallback(TelemetryEventCallback callback) {
+  stopGoServedCallbacks.addCallback(callback);
+}
+void addFlashbackCallback(TelemetryEventCallback callback) {
+  flashbackCallbacks.addCallback(callback);
+}
+void addButtonStatusChangedCallback(TelemetryEventCallback callback) {
+  buttonStatusChangedCallbacks.addCallback(callback);
+}
+void addRedFlagCallback(TelemetryEventCallback callback) {
+  redFlagCallbacks.addCallback(callback);
+}
+void addOvertakeCallback(TelemetryEventCallback callback) {
+  overtakeCallbacks.addCallback(callback);
+}
+void addSafetyCarCallback(TelemetryEventCallback callback) {
+  safetyCarCallbacks.addCallback(callback);
+}
+void addCollisionCallback(TelemetryEventCallback callback) {
+  collisionCallbacks.addCallback(callback);
+}
 
-  success = setupUDP();
-  while (!success) delay(10);
+void processIncomingUDPPacket(AsyncUDPPacket packet) {
+  PacketHeader* gamePacket = (PacketHeader*)packet.data();
+  switch (gamePacket->m_packetId) {
+    case 0:
+      {
+        PacketMotionData*& packetSlot = latestTelemetryPackets.motion;
+        if (!packetSlot) { packetSlot = new PacketMotionData(); }
+        *packetSlot = *(PacketMotionData*)gamePacket;
+        return;
+      }
+    case 1:
+      {
+        PacketSessionData*& packetSlot = latestTelemetryPackets.session;
+        if (!packetSlot) { packetSlot = new PacketSessionData(); }
+        *packetSlot = *(PacketSessionData*)gamePacket;
+        return;
+      }
+    case 2:
+      {
+        PacketLapData*& packetSlot = latestTelemetryPackets.lapData;
+        if (!packetSlot) { packetSlot = new PacketLapData(); }
+        *packetSlot = *(PacketLapData*)gamePacket;
+        return;
+      }
+    case 3:
+      {
+        PacketEventData* eventPacket = (PacketEventData*)gamePacket;
+        switch(*(uint32_t*)eventPacket->m_eventStringCode) {
+          case 1096045395: // SSTA
+            sessionStartedCallbacks.callAll(eventPacket);
+            return;
+          case 1145980243: // SEND
+            sessionEndedCallbacks.callAll(eventPacket);
+            return;
+          case 1347179590: // FTLP
+            fastestLapCallbacks.callAll(eventPacket);
+            return;
+          case 1414354002: // RTMT
+            retirementCallbacks.callAll(eventPacket);
+            return;
+          case 1163088452: // DRSE
+            drsEnabledCallbacks.callAll(eventPacket);
+            return;
+          case 1146311236: // DRSD
+            drsDisabledCallbacks.callAll(eventPacket);
+            return;
+          case 1414548820: // TMPT
+            teamMateInPitsCallbacks.callAll(eventPacket);
+            return;
+          case 1179732035: // CHQF
+            chequeredFlagCallbacks.callAll(eventPacket);
+            return;
+          case 1314341714: // RCWN
+            raceWinnerCallbacks.callAll(eventPacket);
+            return;
+          case 1095648592: // PENA
+            penaltyIssuedCallbacks.callAll(eventPacket);
+            return;
+          case 1347702867: // SPTP
+            speedTrapTriggeredCallbacks.callAll(eventPacket);
+            return;
+          case 1196184659: // STLG
+            startLightsCallbacks.callAll(eventPacket);
+            return;
+          case 1414481740: // LGOT
+            lightsOutCallbacks.callAll(eventPacket);
+            return;
+          case 1448301636: // DTSV
+            driveThroughServedCallbacks.callAll(eventPacket);
+            return;
+          case 1448298323: // SGSV
+            stopGoServedCallbacks.callAll(eventPacket);
+            return;
+          case 1262636102: // FLBK
+            flashbackCallbacks.callAll(eventPacket);
+            return;
+          case 1314149698: // BUTN
+            buttonStatusChangedCallbacks.callAll(eventPacket);
+            return;
+          case 1279673426: // RDFL
+            redFlagCallbacks.callAll(eventPacket);
+            return;
+          case 1263818319: // OVTK
+            overtakeCallbacks.callAll(eventPacket);
+            return;
+          case 1380008787: // SCAR
+            safetyCarCallbacks.callAll(eventPacket);
+            return;
+          case 1280069443: // COLL
+            collisionCallbacks.callAll(eventPacket);
+            return;
+        }
+        Serial.println("Unknown event code");
+        return;
+      }
+    case 4:
+      {
+        PacketParticipantsData*& packetSlot = latestTelemetryPackets.participants;
+        if (!packetSlot) { packetSlot = new PacketParticipantsData(); }
+        *packetSlot = *(PacketParticipantsData*)gamePacket;
+        return;
+      }
+    case 5:
+      {
+        PacketCarSetupData*& packetSlot = latestTelemetryPackets.carSetups;
+        if (!packetSlot) { packetSlot = new PacketCarSetupData(); }
+        *packetSlot = *(PacketCarSetupData*)gamePacket;
+        return;
+      }
+    case 6:
+      {
+        PacketCarTelemetryData*& packetSlot = latestTelemetryPackets.carTelemetry;
+        if (!packetSlot) { packetSlot = new PacketCarTelemetryData(); }
+        *packetSlot = *(PacketCarTelemetryData*)gamePacket;
+        return;
+      }
+    case 7:
+      {
+        PacketCarStatusData*& packetSlot = latestTelemetryPackets.carStatus;
+        if (!packetSlot) { packetSlot = new PacketCarStatusData(); }
+        *packetSlot = *(PacketCarStatusData*)gamePacket;
+        return;
+      }
+    case 8:
+      {
+        PacketFinalClassificationData*& packetSlot = latestTelemetryPackets.finalClassification;
+        if (!packetSlot) { packetSlot = new PacketFinalClassificationData(); }
+        *packetSlot = *(PacketFinalClassificationData*)gamePacket;
+        return;
+      }
+    case 9:
+      {
+        PacketLobbyInfoData*& packetSlot = latestTelemetryPackets.lobbyInfo;
+        if (!packetSlot) { packetSlot = new PacketLobbyInfoData(); }
+        *packetSlot = *(PacketLobbyInfoData*)gamePacket;
+        return;
+      }
+    case 10:
+      {
+        PacketCarDamageData*& packetSlot = latestTelemetryPackets.carDamage;
+        if (!packetSlot) { packetSlot = new PacketCarDamageData(); }
+        *packetSlot = *(PacketCarDamageData*)gamePacket;
+        return;
+      }
+    case 11:
+      {
+        PacketSessionHistoryData* sessionHistoryPacket = (PacketSessionHistoryData*)gamePacket;
+        PacketSessionHistoryData*& packetSlot = latestTelemetryPackets.sessionHistory[sessionHistoryPacket->m_carIdx];
+        if (!packetSlot) { packetSlot = new PacketSessionHistoryData(); }
+        *packetSlot = *sessionHistoryPacket;
+        return;
+      }
+    case 12:
+      {
+        PacketTyreSetsData*& packetSlot = latestTelemetryPackets.tyreSets;
+        if (!packetSlot) { packetSlot = new PacketTyreSetsData(); }
+        *packetSlot = *(PacketTyreSetsData*)gamePacket;
+        return;
+      }
+    case 13:
+      {
+        PacketMotionExData*& packetSlot = latestTelemetryPackets.motionEx;
+        if (!packetSlot) { packetSlot = new PacketMotionExData(); }
+        *packetSlot = *(PacketMotionExData*)gamePacket;
+        return;
+      }
+    case 14:
+      {
+        PacketTimeTrialData*& packetSlot = latestTelemetryPackets.timeTrial;
+        if (!packetSlot) { packetSlot = new PacketTimeTrialData(); }
+        *packetSlot = *(PacketTimeTrialData*)gamePacket;
+        return;
+      }
+  }
 }
 
 bool setupNVS() {
@@ -147,113 +379,10 @@ beginUDP:
   return true;
 }
 
-void processIncomingUDPPacket(AsyncUDPPacket packet) {
-  PacketHeader* gamePacket = (PacketHeader*)packet.data();
-  switch (gamePacket->m_packetId) {
-    case 0:
-      {
-        PacketMotionData*& packetSlot = latestTelemetryPackets.motion;
-        if (!packetSlot) { packetSlot = new PacketMotionData(); }
-        *packetSlot = *(PacketMotionData*)gamePacket;
-        break;
-      }
-    case 1:
-      {
-        PacketSessionData*& packetSlot = latestTelemetryPackets.session;
-        if (!packetSlot) { packetSlot = new PacketSessionData(); }
-        *packetSlot = *(PacketSessionData*)gamePacket;
-        break;
-      }
-    case 2:
-      {
-        PacketLapData*& packetSlot = latestTelemetryPackets.lapData;
-        if (!packetSlot) { packetSlot = new PacketLapData(); }
-        *packetSlot = *(PacketLapData*)gamePacket;
-        break;
-      }
-    case 3:
-      {
-        PacketEventData*& packetSlot = latestTelemetryPackets.event;
-        if (!packetSlot) { packetSlot = new PacketEventData(); }
-        *packetSlot = *(PacketEventData*)gamePacket;
-        break;
-      }
-    case 4:
-      {
-        PacketParticipantsData*& packetSlot = latestTelemetryPackets.participants;
-        if (!packetSlot) { packetSlot = new PacketParticipantsData(); }
-        *packetSlot = *(PacketParticipantsData*)gamePacket;
-        break;
-      }
-    case 5:
-      {
-        PacketCarSetupData*& packetSlot = latestTelemetryPackets.carSetups;
-        if (!packetSlot) { packetSlot = new PacketCarSetupData(); }
-        *packetSlot = *(PacketCarSetupData*)gamePacket;
-        break;
-      }
-    case 6:
-      {
-        PacketCarTelemetryData*& packetSlot = latestTelemetryPackets.carTelemetry;
-        if (!packetSlot) { packetSlot = new PacketCarTelemetryData(); }
-        *packetSlot = *(PacketCarTelemetryData*)gamePacket;
-        break;
-      }
-    case 7:
-      {
-        PacketCarStatusData*& packetSlot = latestTelemetryPackets.carStatus;
-        if (!packetSlot) { packetSlot = new PacketCarStatusData(); }
-        *packetSlot = *(PacketCarStatusData*)gamePacket;
-        break;
-      }
-    case 8:
-      {
-        PacketFinalClassificationData*& packetSlot = latestTelemetryPackets.finalClassification;
-        if (!packetSlot) { packetSlot = new PacketFinalClassificationData(); }
-        *packetSlot = *(PacketFinalClassificationData*)gamePacket;
-        break;
-      }
-    case 9:
-      {
-        PacketLobbyInfoData*& packetSlot = latestTelemetryPackets.lobbyInfo;
-        if (!packetSlot) { packetSlot = new PacketLobbyInfoData(); }
-        *packetSlot = *(PacketLobbyInfoData*)gamePacket;
-        break;
-      }
-    case 10:
-      {
-        PacketCarDamageData*& packetSlot = latestTelemetryPackets.carDamage;
-        if (!packetSlot) { packetSlot = new PacketCarDamageData(); }
-        *packetSlot = *(PacketCarDamageData*)gamePacket;
-        break;
-      }
-    case 11:
-      {
-        PacketSessionHistoryData*& packetSlot = latestTelemetryPackets.sessionHistory;
-        if (!packetSlot) { packetSlot = new PacketSessionHistoryData(); }
-        packetSlot[packetSlot->m_carIdx] = *(PacketSessionHistoryData*)gamePacket;
-        break;
-      }
-    case 12:
-      {
-        PacketTyreSetsData*& packetSlot = latestTelemetryPackets.tyreSets;
-        if (!packetSlot) { packetSlot = new PacketTyreSetsData(); }
-        *packetSlot = *(PacketTyreSetsData*)gamePacket;
-        break;
-      }
-    case 13:
-      {
-        PacketMotionExData*& packetSlot = latestTelemetryPackets.motionEx;
-        if (!packetSlot) { packetSlot = new PacketMotionExData(); }
-        *packetSlot = *(PacketMotionExData*)gamePacket;
-        break;
-      }
-    case 14:
-      {
-        PacketTimeTrialData*& packetSlot = latestTelemetryPackets.timeTrial;
-        if (!packetSlot) { packetSlot = new PacketTimeTrialData(); }
-        *packetSlot = *(PacketTimeTrialData*)gamePacket;
-        break;
-      }
-  }
+void setupTelemetry() {
+  bool success = setupNVS();
+  while (!success) delay(10);
+
+  success = setupUDP();
+  while (!success) delay(10);
 }
