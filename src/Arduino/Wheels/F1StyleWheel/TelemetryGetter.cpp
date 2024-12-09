@@ -385,4 +385,7 @@ void setupTelemetry() {
 
   success = setupUDP();
   while (!success) delay(10);
+
+  Serial.print("Local ip: ");
+  Serial.println(WiFi.localIP());
 }

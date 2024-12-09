@@ -1,18 +1,27 @@
+#include "Screen.h"
 #include "TelemetryGetter.h"
 
-#include <Arduino.h>
+// Screen connections are using IOMux SPI pins
 
 void setup() {
-  delay(500);
-
   Serial.begin(115200);
 
   setupTelemetry();
 
   addPenaltyIssuedCallback(penaltyIssued);
+
+  bool success = initScreen();
+  while(!success) delay(10);
+
+  setCurrentPage(&Pages::testPage);
 }
 
 void loop() {
+  updateScreen();
+
+  PacketCarTelemetryData* carTelemetryPacket = latestTelemetryPackets.carTelemetry;
+  if(!carTelemetryPacket) return;
+  speed = carTelemetryPacket->m_carTelemetryData[carTelemetryPacket->m_header.m_playerCarIndex].m_speed;
 }
 
 void penaltyIssued(const PacketEventData* eventPacket) {
