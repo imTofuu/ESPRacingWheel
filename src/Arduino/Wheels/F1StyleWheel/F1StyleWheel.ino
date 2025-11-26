@@ -13,6 +13,8 @@ void setup() {
   bool success = initScreen();
   while(!success) delay(10);
 
+  Serial.println("Screen init");
+
   setCurrentPage(&Pages::testPage);
 }
 
@@ -22,6 +24,7 @@ void loop() {
   PacketCarTelemetryData* carTelemetryPacket = latestTelemetryPackets.carTelemetry;
   if(!carTelemetryPacket) return;
   speed = carTelemetryPacket->m_carTelemetryData[carTelemetryPacket->m_header.m_playerCarIndex].m_speed;
+  Serial.println(speed);
 }
 
 void penaltyIssued(const PacketEventData* eventPacket) {

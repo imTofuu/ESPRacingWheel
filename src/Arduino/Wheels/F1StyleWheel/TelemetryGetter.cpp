@@ -293,7 +293,7 @@ getSSID:
   }
   ssidlen = Serial.available();
   Serial.read(ssid, ssidlen);
-  ssid[ssidlen - 1] = '\0';
+  ssid[ssidlen] = '\0';
 
 getPass:
   Serial.println("Enter pass");
@@ -305,7 +305,7 @@ getPass:
   }
   passlen = Serial.available();
   Serial.read(pass, passlen);
-  pass[passlen - 1] = '\0';
+  pass[passlen] = '\0';
 
   nvs_set_u8(NVSHandle, "ssidlen", ssidlen);
   nvs_set_u8(NVSHandle, "passlen", passlen);

@@ -5,7 +5,7 @@
 #define ATTEMPTED_REFRESH_RATE 20 // hz
 
 static Arduino_DataBus* bus = create_default_Arduino_DataBus();
-static Arduino_GFX* display = new Arduino_ST7789(bus, 33 /* RST */, 1 /* rotation */);
+static Arduino_GFX* display = new Arduino_ST7796(bus, 33 /* RST */, 1 /* rotation */);
 
 static Page* currentPage;
 

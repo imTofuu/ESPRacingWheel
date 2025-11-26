@@ -13,7 +13,7 @@ bool initScreen() {
   GFX_EXTRA_PRE_INIT();
 #endif
   if(!display->begin(80000000)) { Serial.println("Failed to init screen"); return false; }
-  display->fillScreen(BLACK);
+  display->fillScreen(0);
   return true;
 }
 
